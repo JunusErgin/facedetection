@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        canvas,
+        video {
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+    </style>
+</head>
+
+<body onload="init()">
+    <video id="video" width="720" height="480" autoplay muted>
+    <script src="face-api.min.js"></script>
+    <script>
+        async function init() {
+            await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
+            await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
+            await faceapi.nets.faceRecognitionNet.loadFromUri('/models');
+            await faceapi.nets.faceExpressionNet.loadFromUri('/models');
+            navigator.getUserMedia({
+                video: {}
+            },
+            s => video.srcObject = s,
+            console.error);
+        }
+
+        video.addEventListener('play', startFaceDetection)
+
+        function startFaceDetection(){
+            let canvas = faceapi.createCanvasFromMedia(video);
+            document.body.append(canvas);
+            setInterval(async function(){
+                let options = new faceapi.TinyFaceDetectorOptions();
+                canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+                let size = {width: video.width, height: video.height};
+                let detections = await faceapi.detectAllFaces(video, options).withFaceLandmarks().withFaceExpressions();
+                let resizedDetections = faceapi.resizeResults(detections, size);
+                faceapi.draw.drawDetections(canvas, resizedDetections);
+                faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
+                faceapi.draw.drawFaceExpressions(canvas, resizedDetections);
+            }, 100);
+        }
+    </script>
+</body>
+
+</html>
